@@ -182,7 +182,7 @@ void proxy::handle_stateless_advert(const address& saddr, const address& taddr, 
     ptr<session> se = find_or_create_session(taddr);
     if (!se) return;
     
-    if (_autowire == true && se->status() == session::WAITING) {
+    if (_autowire == true && (se->status() == session::WAITING || se->status() == session::INVALID)) {
         se->handle_auto_wire(saddr, ifname, use_via);
     }
 }

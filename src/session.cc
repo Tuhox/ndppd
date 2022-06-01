@@ -286,7 +286,7 @@ void session::handle_auto_unwire(const std::string& ifname)
 
 void session::handle_advert(const address& saddr, const std::string& ifname, bool use_via)
 {
-    if (_autowire == true && _status == WAITING) {
+    if (_autowire == true && (_status == WAITING || _status == INVALID)) {
         handle_auto_wire(saddr, ifname, use_via);
     }
     
