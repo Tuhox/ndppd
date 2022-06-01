@@ -21,7 +21,7 @@
 #define NDPPD_NS_BEGIN   namespace ndppd {
 #define NDPPD_NS_END     }
 
-#define NDPPD_VERSION   "0.2.4"
+#define NDPPD_VERSION   "0.2.6"
 
 #include <assert.h>
 
