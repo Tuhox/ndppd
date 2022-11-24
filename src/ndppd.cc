@@ -171,6 +171,11 @@ static bool configure(ptr<conf>& cf)
             return false;
         }
 
+        if (!(x_cf = pr_cf->find("outgoing")))
+            pr->outgoing(false);
+        else
+            pr->outgoing(*x_cf);
+
         if (!(x_cf = pr_cf->find("router")))
             pr->router(true);
         else

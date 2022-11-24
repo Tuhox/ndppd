@@ -101,7 +101,7 @@ ptr<iface> iface::open_pfd(const std::string& name, bool promiscuous)
 
     // Create a socket.
 
-    if ((fd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_IPV6))) < 0) {
+    if ((fd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) < 0) {
         logger::error() << "Unable to create socket";
         return ptr<iface>();
     }
@@ -112,7 +112,7 @@ ptr<iface> iface::open_pfd(const std::string& name, bool promiscuous)
 
     memset(&lladdr, 0, sizeof(struct sockaddr_ll));
     lladdr.sll_family   = AF_PACKET;
-    lladdr.sll_protocol = htons(ETH_P_IPV6);
+    lladdr.sll_protocol = htons(ETH_P_ALL);
 
     if (!(lladdr.sll_ifindex = if_nametoindex(name.c_str()))) {
         close(fd);
@@ -367,7 +367,7 @@ ssize_t iface::write(int fd, const address& daddr, const uint8_t* msg, size_t si
     return len;
 }
 
-ssize_t iface::read_solicit(address& saddr, address& daddr, address& taddr)
+ssize_t iface::read_solicit(address& saddr, address& daddr, address& taddr, bool& is_outgoing)
 {
     struct sockaddr_ll t_saddr;
     uint8_t msg[256];
@@ -388,12 +388,10 @@ ssize_t iface::read_solicit(address& saddr, address& daddr, address& taddr)
     daddr = ip6h->ip6_dst;
     saddr = ip6h->ip6_src;
     
-    // Ignore packets sent from this machine
-    if (iface::is_local(saddr) == true) {
-        return 0;
-    }
+    // Tag packets sent from this machine
+    is_outgoing = t_saddr.sll_pkttype == PACKET_OUTGOING || iface::is_local(saddr);
 
-    logger::debug() << "iface::read_solicit() saddr=" << saddr.to_string()
+    logger::debug() << "iface::read_solicit() saddr=" << saddr.to_string() << ", outgoing=" << is_outgoing
                     << ", daddr=" << daddr.to_string() << ", taddr=" << taddr.to_string() << ", len=" << len;
 
     return len;
@@ -659,21 +657,18 @@ int iface::poll_all()
         }
 
         address saddr, daddr, taddr;
+        bool is_outgoing;
         ssize_t size;
 
         if (is_pfd) {
-            size = ifa->read_solicit(saddr, daddr, taddr);
+            size = ifa->read_solicit(saddr, daddr, taddr, is_outgoing);
             if (size < 0) {
                 logger::error() << "Failed to read from interface '%s'", ifa->_name.c_str();
-                continue;
-            } 
-            if (size == 0) {
-                logger::debug() << "iface::read_solicit() loopback received and ignored";
                 continue;
             }
             
             // Process any local addresses for interfaces that we are proxying
-            if (ifa->handle_local(saddr, taddr) == true) {
+            if (!is_outgoing && ifa->handle_local(saddr, taddr) == true) {
                 continue;
             }
             
@@ -681,7 +676,9 @@ int iface::poll_all()
             // the reverse path towards the one who sent this solicit.
             // In fact, the parent need to know the source address in order
             // to respond to NDP Solicitations
-            ifa->handle_reverse_advert(saddr, ifa->name());
+            if (!is_outgoing) {
+                ifa->handle_reverse_advert(saddr, ifa->name());
+            }
 
             // Loop through all the proxies that are using this iface to respond to NDP solicitation requests
             bool handled = false;
@@ -691,8 +688,11 @@ int iface::poll_all()
                 
                 // Process the solicitation request by relating it to other
                 // interfaces or lookup up any statics routes we have configured
-                handled = true;
-                pr->handle_solicit(saddr, taddr, ifa->name());
+                // Only handle outgoing packets if specified in proxy config
+                if (!is_outgoing || pr->outgoing()) {
+                    handled = true;
+                    pr->handle_solicit(saddr, taddr, ifa->name(), is_outgoing);
+                }
             }
             
             // If it was not handled then write an error message

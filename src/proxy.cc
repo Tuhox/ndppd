@@ -187,7 +187,7 @@ void proxy::handle_stateless_advert(const address& saddr, const address& taddr, 
     }
 }
 
-void proxy::handle_solicit(const address& saddr, const address& taddr, const std::string& ifname)
+void proxy::handle_solicit(const address& saddr, const address& taddr, const std::string& ifname, bool is_outgoing)
 {
     logger::debug()
         << "proxy::handle_solicit()";
@@ -196,10 +196,13 @@ void proxy::handle_solicit(const address& saddr, const address& taddr, const std
     ptr<session> se = find_or_create_session(taddr);
     if (!se) return;
     
-    // Touching the session will cause an NDP advert to be transmitted to all
+    // Touching the session will cause an NDP solicit to be transmitted to all
     // the daughters
     se->touch();
-    
+
+    // We don't need to send adverts back for outgoing solicits so don't subscribe
+    if (is_outgoing) return;
+
     // If our session is confirmed then we can respoond with an advert otherwise
     // subscribe so that if it does become active we can notify everyone
     if (saddr != taddr) {
@@ -255,6 +258,16 @@ const ptr<iface>& proxy::ifa() const
 bool proxy::promiscuous() const
 {
     return _promiscuous;
+}
+
+bool proxy::outgoing() const
+{
+    return _outgoing;
+}
+
+void proxy::outgoing(bool val)
+{
+    _outgoing = val;
 }
 
 bool proxy::router() const
