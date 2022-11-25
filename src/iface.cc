@@ -387,6 +387,11 @@ ssize_t iface::read_solicit(address& saddr, address& daddr, address& taddr, bool
     taddr = ns->nd_ns_target;
     daddr = ip6h->ip6_dst;
     saddr = ip6h->ip6_src;
+
+    // Drop packets with hop limit less than 255 (might have been forwarded)
+    if (ip6h->ip6_ctlun.ip6_un1.ip6_un1_hlim != 255) {
+        return 0;
+    }
     
     // Tag packets sent from this machine
     is_outgoing = t_saddr.sll_pkttype == PACKET_OUTGOING || iface::is_local(saddr);
@@ -664,6 +669,10 @@ int iface::poll_all()
             size = ifa->read_solicit(saddr, daddr, taddr, is_outgoing);
             if (size < 0) {
                 logger::error() << "Failed to read from interface '%s'", ifa->_name.c_str();
+                continue;
+            }
+            if (size == 0) {
+                logger::debug() << "iface::read_solicit() off-link received and ignored";
                 continue;
             }
             
