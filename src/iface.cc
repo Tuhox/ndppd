@@ -393,8 +393,8 @@ ssize_t iface::read_solicit(address& saddr, address& daddr, address& taddr, bool
         return 0;
     }
     
-    // Tag packets sent from this machine
-    is_outgoing = t_saddr.sll_pkttype == PACKET_OUTGOING || iface::is_local(saddr);
+    // Tag outgoing packets
+    is_outgoing = t_saddr.sll_pkttype == PACKET_OUTGOING;
 
     logger::debug() << "iface::read_solicit() saddr=" << saddr.to_string() << ", outgoing=" << is_outgoing
                     << ", daddr=" << daddr.to_string() << ", taddr=" << taddr.to_string() << ", len=" << len;
@@ -489,11 +489,6 @@ ssize_t iface::read_advert(address& saddr, address& taddr)
 
     saddr = t_saddr.sin6_addr;
     
-    // Ignore packets sent from this machine
-    if (iface::is_local(saddr) == true) {
-        return 0;
-    }
-
     if (((struct icmp6_hdr* )msg)->icmp6_type != ND_NEIGHBOR_ADVERT)
         return -1;
 
@@ -713,10 +708,6 @@ int iface::poll_all()
             size = ifa->read_advert(saddr, taddr);
             if (size < 0) {
                 logger::error() << "Failed to read from interface '%s'", ifa->_name.c_str();
-                continue;
-            }
-            if (size == 0) {
-                logger::debug() << "iface::read_advert() loopback received and ignored";
                 continue;
             }
             
