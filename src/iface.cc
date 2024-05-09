@@ -671,17 +671,17 @@ int iface::poll_all()
                 continue;
             }
             
-            // Process any local addresses for interfaces that we are proxying
-            if (!is_outgoing && ifa->handle_local(saddr, taddr) == true) {
-                continue;
-            }
-            
             // We have to handle all the parents who may be interested in
             // the reverse path towards the one who sent this solicit.
             // In fact, the parent need to know the source address in order
             // to respond to NDP Solicitations
             if (!is_outgoing) {
                 ifa->handle_reverse_advert(saddr, ifa->name());
+            }
+
+            // Process any local addresses for interfaces that we are proxying
+            if (!is_outgoing && ifa->handle_local(saddr, taddr) == true) {
+                continue;
             }
 
             // Loop through all the proxies that are using this iface to respond to NDP solicitation requests
