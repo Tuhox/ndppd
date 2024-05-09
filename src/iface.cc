@@ -519,6 +519,12 @@ bool iface::handle_local(const address& saddr, const address& taddr)
     {
         if ((*ad)->addr() == taddr)
         {
+            // If the target address is on the incoming interface, let system handle it
+            if ((*ad)->ifname() == name())
+            {
+                return true;
+            }
+
             // Loop through all the serves that are using this iface to respond to NDP solicitation requests
             for (std::list<weak_ptr<proxy> >::iterator pit = serves_begin(); pit != serves_end(); pit++) {
                 ptr<proxy> pr = (*pit);
