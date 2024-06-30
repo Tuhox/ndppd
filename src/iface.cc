@@ -564,7 +564,7 @@ void iface::handle_reverse_advert(const address& saddr, const std::string& ifnam
         for (std::list<ptr<rule> >::iterator it = parent->rules_begin(); it != parent->rules_end(); it++) {
             ptr<rule> ru = *it;
 
-            if (ru->addr() == saddr &&
+            if (ru->addr() == saddr && ru->daughter() &&
                 ru->daughter()->name() == ifname)
             {
                 logger::debug() << " - generating artifical advertisement: " << ifname;
@@ -664,7 +664,7 @@ int iface::poll_all()
         if (is_pfd) {
             size = ifa->read_solicit(saddr, daddr, taddr);
             if (size < 0) {
-                logger::error() << "Failed to read from interface '%s'", ifa->_name.c_str();
+                logger::error() << "Failed to read from interface '" << ifa->_name.c_str() << "'";
                 continue;
             } 
             if (size == 0) {
@@ -703,7 +703,7 @@ int iface::poll_all()
         } else {
             size = ifa->read_advert(saddr, taddr);
             if (size < 0) {
-                logger::error() << "Failed to read from interface '%s'", ifa->_name.c_str();
+                logger::error() << "Failed to read from interface '" << ifa->_name.c_str() << "'";
                 continue;
             }
             if (size == 0) {
