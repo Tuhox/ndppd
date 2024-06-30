@@ -209,7 +209,11 @@ void session::handle_auto_wire(const address& saddr, const std::string& ifname, 
         logger::debug()
             << "session::system(" << route_cmd.str() << ")";
         
-        system(route_cmd.str().c_str());
+        int ret = system(route_cmd.str().c_str());
+        if (ret != 0) {
+           logger::error()
+                << "system(" << route_cmd.str().c_str() << ") failed, return " << ret;
+        }
         
         _wired_via = saddr;
     }
@@ -233,7 +237,11 @@ void session::handle_auto_wire(const address& saddr, const std::string& ifname, 
         logger::debug()
             << "session::system(" << route_cmd.str() << ")";
 
-        system(route_cmd.str().c_str());
+        int ret = system(route_cmd.str().c_str());
+        if (ret != 0) {
+            logger::error()
+                << "system(" << route_cmd.str().c_str() << ") failed, return " << ret;
+        }
     }
     
     _wired = true;
@@ -261,7 +269,11 @@ void session::handle_auto_unwire(const std::string& ifname)
         logger::debug()
             << "session::system(" << route_cmd.str() << ")";
 
-        system(route_cmd.str().c_str());
+        int ret = system(route_cmd.str().c_str());
+        if (ret != 0) {
+            logger::error()
+                << "system(" << route_cmd.str().c_str() << ") failed, return " << ret;
+        }
     }
     
     if (_wired_via.is_empty() == false) {
@@ -277,7 +289,11 @@ void session::handle_auto_unwire(const std::string& ifname)
         logger::debug()
             << "session::system(" << route_cmd.str() << ")";
 
-        system(route_cmd.str().c_str());
+        int ret = system(route_cmd.str().c_str());
+        if (ret != 0) {
+            logger::error()
+                << "system(" << route_cmd.str().c_str() << ") failed, return " << ret;
+        }
     }
     
     _wired = false;
