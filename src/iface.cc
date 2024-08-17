@@ -41,6 +41,7 @@
 
 #include "ndppd.h"
 #include "route.h"
+#include "cksum.h"
 
 NDPPD_NS_BEGIN
 
@@ -367,7 +368,7 @@ ssize_t iface::write(int fd, const address& daddr, const uint8_t* msg, size_t si
     return len;
 }
 
-ssize_t iface::read_solicit(address& saddr, address& daddr, address& taddr)
+ssize_t iface::read_solicit(ether_addr& shwaddr, address& saddr, address& daddr, address& taddr)
 {
     struct sockaddr_ll t_saddr;
     uint8_t msg[256];
@@ -378,6 +379,8 @@ ssize_t iface::read_solicit(address& saddr, address& daddr, address& taddr)
         return -1;
     }
 
+    struct ether_header* ethh = (struct ether_header*) msg;
+
     struct ip6_hdr* ip6h =
           (struct ip6_hdr* )(msg + ETH_HLEN);
 
@@ -387,13 +390,21 @@ ssize_t iface::read_solicit(address& saddr, address& daddr, address& taddr)
     taddr = ns->nd_ns_target;
     daddr = ip6h->ip6_dst;
     saddr = ip6h->ip6_src;
+    memcpy(&shwaddr, ethh->ether_shost, ETH_ALEN);
     
     // Ignore packets sent from this machine
     if (iface::is_local(saddr) == true) {
         return 0;
     }
 
+    char shwaddr_s[18];
+    char dhwaddr_s[18];
+    ether_ntoa_r(&shwaddr, shwaddr_s);
+    ether_ntoa_r((struct ether_addr*) &ethh->ether_dhost, dhwaddr_s);
+
     logger::debug() << "iface::read_solicit() saddr=" << saddr.to_string()
+                    << ", shwaddr=" << shwaddr_s
+                    << ", dhwaddr=" << dhwaddr_s
                     << ", daddr=" << daddr.to_string() << ", taddr=" << taddr.to_string() << ", len=" << len;
 
     return len;
@@ -438,35 +449,62 @@ ssize_t iface::write_solicit(const address& taddr)
     return write(_ifd, daddr, (uint8_t* )buf, sizeof(struct nd_neighbor_solicit)
                  + sizeof(struct nd_opt_hdr) + 6);
 }
+const uint16_t plen = htons(0x20);
+const uint16_t ether_type_ipv6 = htons(ETHERTYPE_IPV6);
 
-ssize_t iface::write_advert(const address& daddr, const address& taddr, bool router)
+ssize_t iface::write_advert(const ether_addr& dhwaddr, const address& daddr, const address& taddr, bool router)
 {
     char buf[128];
+    // buffer layout:
+    // 0x00 - ether_hdr
+    // 0x0e - ipv6_hdr
+    // 0x36 - nd_neighbor_advert
 
     memset(buf, 0, sizeof(buf));
 
+    ether_header* ethh = (ether_header*) &buf[0];
+    ip6_hdr* ip6h = (ip6_hdr*) &buf[ETH_HLEN];
     struct nd_neighbor_advert* na =
-        (struct nd_neighbor_advert* )&buf[0];
+            (struct nd_neighbor_advert*) &buf[ETH_HLEN + sizeof(ip6_hdr)];
 
     struct nd_opt_hdr* opt =
-        (struct nd_opt_hdr* )&buf[sizeof(struct nd_neighbor_advert)];
+        (struct nd_opt_hdr* )&buf[ETH_HLEN + sizeof(ip6_hdr) + sizeof(struct nd_neighbor_advert)];
+
+    // cook packet
+    // ETHER
+    memcpy(&ethh->ether_shost, &this->hwaddr, ETH_ALEN);
+    memcpy(&ethh->ether_dhost, &dhwaddr, ETH_ALEN);
+    ethh->ether_type = ether_type_ipv6;
+
+    // IPv6 header
+    memcpy(&ip6h->ip6_src, &taddr.const_addr(), sizeof (in6_addr));
+    memcpy(&ip6h->ip6_dst, &daddr.const_addr(), sizeof (in6_addr));
+    ip6h->ip6_plen = plen;
+    ip6h->ip6_nxt  = IPPROTO_ICMPV6;
+    ip6h->ip6_hops = 255;
+    ip6h->ip6_vfc = 0x60;
+
+    // Neighbor advert header
 
     opt->nd_opt_type         = ND_OPT_TARGET_LINKADDR;
     opt->nd_opt_len          = 1;
 
     na->nd_na_type           = ND_NEIGHBOR_ADVERT;
     na->nd_na_flags_reserved = (daddr.is_multicast() ? 0 : ND_NA_FLAG_SOLICITED) | (router ? ND_NA_FLAG_ROUTER : 0);
+    na->nd_na_cksum          = 0; // will set later
 
     memcpy(&na->nd_na_target,& taddr.const_addr(), sizeof(struct in6_addr));
 
-    memcpy(buf + sizeof(struct nd_neighbor_advert) + sizeof(struct nd_opt_hdr),
+    memcpy(buf + ETH_HLEN + sizeof(ip6_hdr) + sizeof(struct nd_neighbor_advert) + sizeof(struct nd_opt_hdr),
            &hwaddr, 6);
+    na->nd_na_cksum = icmp6_sum(ip6h, na, sizeof(struct nd_neighbor_advert) + sizeof(struct nd_opt_hdr) + 6);
 
     logger::debug() << "iface::write_advert() daddr=" << daddr.to_string()
-                    << ", taddr=" << taddr.to_string();
+                    << ", taddr=" << taddr.to_string()
+                    << ", dhwaddr=" << ether_ntoa(&dhwaddr);
 
-    return write(_ifd, daddr, (uint8_t* )buf, sizeof(struct nd_neighbor_advert) +
-        sizeof(struct nd_opt_hdr) + 6);
+    return send(_pfd, buf, ETH_HLEN + sizeof (ip6_hdr) + sizeof(nd_neighbor_advert) +
+                           sizeof(nd_opt_hdr) + 6, 0);
 }
 
 ssize_t iface::read_advert(address& saddr, address& taddr)
@@ -513,7 +551,7 @@ bool iface::is_local(const address& addr)
     return false;
 }
 
-bool iface::handle_local(const address& saddr, const address& taddr)
+bool iface::handle_local(const ether_addr& shwaddr, const address& saddr, const address& taddr)
 {
     // Check if the address is for an interface we own that is attached to
     // one of the slave interfaces    
@@ -532,7 +570,7 @@ bool iface::handle_local(const address& saddr, const address& taddr)
                     if (ru->daughter() && ru->daughter()->name() == (*ad)->ifname())
                     {
                         logger::debug() << "proxy::handle_solicit() found local taddr=" << taddr;
-                        write_advert(saddr, taddr, false);
+                        write_advert(shwaddr, saddr, taddr, false);
                         return true;
                     }
                 }
@@ -659,10 +697,11 @@ int iface::poll_all()
         }
 
         address saddr, daddr, taddr;
+        ether_addr shwaddr;
         ssize_t size;
 
         if (is_pfd) {
-            size = ifa->read_solicit(saddr, daddr, taddr);
+            size = ifa->read_solicit(shwaddr, saddr, daddr, taddr);
             if (size < 0) {
                 logger::error() << "Failed to read from interface '%s'", ifa->_name.c_str();
                 continue;
@@ -673,7 +712,7 @@ int iface::poll_all()
             }
             
             // Process any local addresses for interfaces that we are proxying
-            if (ifa->handle_local(saddr, taddr) == true) {
+            if (ifa->handle_local(shwaddr, saddr, taddr)) {
                 continue;
             }
             
@@ -692,7 +731,7 @@ int iface::poll_all()
                 // Process the solicitation request by relating it to other
                 // interfaces or lookup up any statics routes we have configured
                 handled = true;
-                pr->handle_solicit(saddr, taddr, ifa->name());
+                pr->handle_solicit(shwaddr, saddr, taddr, ifa->name());
             }
             
             // If it was not handled then write an error message

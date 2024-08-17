@@ -142,14 +142,14 @@ void session::add_iface(const ptr<iface>& ifa)
     _ifaces.push_back(ifa);
 }
 
-void session::add_pending(const address& addr)
+void session::add_pending(const ether_addr &hwaddr, const address &addr)
 {
-    for (std::list<ptr<address> >::iterator ad = _pending.begin(); ad != _pending.end(); ad++) {
-        if (addr == (*ad))
+    for (std::list<ptr<solicitor> >::iterator ad = _pending.begin(); ad != _pending.end(); ad++) {
+        if ((*ad)->is(addr, hwaddr))
             return;
     }
 
-    _pending.push_back(new address(addr));
+    _pending.push_back(new solicitor(addr, hwaddr));
 }
 
 void session::send_solicit()
@@ -179,9 +179,9 @@ void session::touch()
     }
 }
 
-void session::send_advert(const address& daddr)
+void session::send_advert(const ether_addr &dhwaddr, const address& daddr)
 {
-    _pr->ifa()->write_advert(daddr, _taddr, _pr->router());
+    _pr->ifa()->write_advert(dhwaddr, daddr, _taddr, _pr->router());
 }
 
 void session::handle_auto_wire(const address& saddr, const std::string& ifname, bool use_via)
@@ -309,12 +309,12 @@ void session::handle_advert()
     _fails  = 0;
     
     if (!_pending.empty()) {
-        for (std::list<ptr<address> >::iterator ad = _pending.begin();
+        for (std::list<ptr<solicitor> >::iterator ad = _pending.begin();
                 ad != _pending.end(); ad++) {
-            ptr<address> addr = (*ad);
-            logger::debug() << " - forward to " << addr;
+            ptr<solicitor> psolicitor = (*ad);
+            logger::debug() << " - forward to " << *psolicitor;
 
-            send_advert(addr);
+            send_advert(psolicitor->hwaddr(), psolicitor->addr());
         }
 
         _pending.clear();

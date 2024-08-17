@@ -13,7 +13,7 @@ PKG_CONFIG ?= pkg-config
 
 
 OBJS     = src/logger.o src/ndppd.o src/iface.o src/proxy.o src/address.o \
-           src/rule.o src/session.o src/conf.o src/route.o 
+           src/rule.o src/session.o src/solicitor.o src/conf.o src/route.o src/cksum.o
 
 ifdef WITH_ND_NETLINK
   LIBS     = `${PKG_CONFIG} --libs glib-2.0 libnl-3.0 libnl-route-3.0` -pthread
