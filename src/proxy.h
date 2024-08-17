@@ -41,8 +41,8 @@ public:
     void handle_advert(const address& saddr, const address& taddr, const std::string& ifname, bool use_via);
     
     void handle_stateless_advert(const address& saddr, const address& taddr, const std::string& ifname, bool use_via);
-    
-    void handle_solicit(const address& saddr, const address& taddr, const std::string& ifname);
+
+    void handle_solicit(const ether_addr& shwaddr, const address& saddr, const address& taddr, const std::string& ifname);
 
     void remove_session(const ptr<session>& se);
 

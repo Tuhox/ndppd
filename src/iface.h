@@ -50,15 +50,15 @@ public:
     ssize_t write_solicit(const address& taddr);
 
     // Writes a NB_NEIGHBOR_ADVERT message to the _ifd socket;
-    ssize_t write_advert(const address& daddr, const address& taddr, bool router);
+    ssize_t write_advert(const ether_addr& dhwaddr, const address& daddr, const address& taddr, bool router);
 
     // Reads a NB_NEIGHBOR_SOLICIT message from the _pfd socket.
-    ssize_t read_solicit(address& saddr, address& daddr, address& taddr);
+    ssize_t read_solicit(ether_addr& shwaddr, address& saddr, address& daddr, address& taddr);
 
     // Reads a NB_NEIGHBOR_ADVERT message from the _ifd socket;
     ssize_t read_advert(address& saddr, address& taddr);
-    
-    bool handle_local(const address& saddr, const address& taddr);
+
+    bool handle_local(const ether_addr& shwaddr, const address& saddr, const address& taddr);
     
     bool is_local(const address& addr);
     

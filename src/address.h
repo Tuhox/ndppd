@@ -50,9 +50,9 @@ public:
 
     struct in6_addr& mask();
 
-    // Compare _a/_m against a._a.
+    /// Compare _a/_m against a._a. NON-PERMUTATIVE!
     bool operator==(const address& addr) const;
-
+    /// NON-PERMUTATIVE!
     bool operator!=(const address& addr) const;
 
     void reset();

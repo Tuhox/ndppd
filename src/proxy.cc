@@ -187,7 +187,7 @@ void proxy::handle_stateless_advert(const address& saddr, const address& taddr, 
     }
 }
 
-void proxy::handle_solicit(const address& saddr, const address& taddr, const std::string& ifname)
+void proxy::handle_solicit(const ether_addr& shwaddr, const address& saddr, const address& taddr, const std::string& ifname)
 {
     logger::debug()
         << "proxy::handle_solicit()";
@@ -206,12 +206,12 @@ void proxy::handle_solicit(const address& saddr, const address& taddr, const std
         switch (se->status()) {
             case session::WAITING:
             case session::INVALID:
-                se->add_pending(saddr);
+                se->add_pending(shwaddr, saddr);
                 break;
 
             case session::VALID:
             case session::RENEWING:
-                se->send_advert(saddr);
+                se->send_advert(shwaddr, saddr);
                 break;
         }
      }

@@ -19,6 +19,7 @@
 #include <string>
 
 #include "ndppd.h"
+#include "solicitor.h"
 
 NDPPD_NS_BEGIN
 
@@ -46,8 +47,9 @@ private:
     // An array of interfaces this session is monitoring for
     // ND_NEIGHBOR_ADVERT on.
     std::list<ptr<iface> > _ifaces;
-    
-    std::list<ptr<address> > _pending;
+
+    /// pending solicitors
+    std::list<ptr<solicitor>> _pending;
 
     // The remaining time in miliseconds the object will stay in the
     // interface's session array or cache.
@@ -79,7 +81,7 @@ public:
 
     void add_iface(const ptr<iface>& ifa);
     
-    void add_pending(const address& addr);
+    void add_pending(const ether_addr& hwaddr, const address& addr);
 
     const address& taddr() const;
 
@@ -102,7 +104,8 @@ public:
     int status() const;
 
     void status(int val);
-    
+
+    /// handle incoming advert
     void handle_advert();
 
     void handle_advert(const address& saddr, const std::string& ifname, bool use_via);
@@ -113,7 +116,9 @@ public:
     
     void touch();
 
-    void send_advert(const address& daddr);
+    /// send advert to original solicitation
+    /// \param daddr - IPv6 dhwaddr of router requesting original solicitation
+    void send_advert(const ether_addr &dhwaddr, const address &daddr);
 
     void send_solicit();
 
