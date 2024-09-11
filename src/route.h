@@ -44,7 +44,7 @@ public:
     const address& addr() const;
 
     ptr<iface> ifa();
-    
+
     route(const address& addr, const std::string& ifname);
 
     static size_t hexdec(const char* str, unsigned char* buf, size_t size);

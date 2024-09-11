@@ -82,15 +82,7 @@ address::address(const char* str)
 
 address::address(const in6_addr& addr)
 {
-    _addr.s6_addr32[0] = addr.s6_addr32[0];
-    _addr.s6_addr32[1] = addr.s6_addr32[1];
-    _addr.s6_addr32[2] = addr.s6_addr32[2];
-    _addr.s6_addr32[3] = addr.s6_addr32[3];
-
-    _mask.s6_addr32[0] = 0xffffffff;
-    _mask.s6_addr32[1] = 0xffffffff;
-    _mask.s6_addr32[2] = 0xffffffff;
-    _mask.s6_addr32[3] = 0xffffffff;
+    *this = addr;
 }
 
 address::address(const in6_addr& addr, const in6_addr& mask)
@@ -132,6 +124,18 @@ bool address::operator!=(const address& addr) const
               ((_addr.s6_addr32[3] ^ addr._addr.s6_addr32[3]) & _mask.s6_addr32[3]));
 }
 
+address& address::operator=(const address& addr)
+{
+    _ttl       = addr._ttl;
+    _c_ttl     = addr._c_ttl;
+    _addresses = addr._addresses;
+    _addr      = addr._addr;
+    _mask      = addr._mask;
+
+    return *this;
+}
+
+
 bool address::is_empty() const
 {
     if (_addr.s6_addr32[0] == 0 &&
@@ -143,7 +147,7 @@ bool address::is_empty() const
         _mask.s6_addr32[2] == 0xffffffff &&
         _mask.s6_addr32[3] == 0xffffffff)
         return true;
-        
+
     return false;
 }
 
@@ -339,7 +343,7 @@ bool address::is_unicast() const
     if (_addr.s6_addr32[2] == 0 &&
         _addr.s6_addr32[3] == 0)
         return false;
-    
+
     return _addr.s6_addr[0] != 0xff;
 }
 
@@ -390,20 +394,20 @@ void address::load(const std::string& path)
                 logger::warning() << "failed to load address (" << buf << ")";
                 continue;
             }
-            
+
             addr.prefix(128);
-            
+
             std::string iface = route::token(buf + 45);
 
             address::add(addr, iface);
-            
+
             logger::debug() << "found local addr=" << addr << ", iface=" << iface;
         }
-    } catch (std::ifstream::failure e) {
+    } catch (std::ifstream::failure & e) {
         logger::warning() << "Failed to parse IPv6 address data from '" << path << "'";
         logger::error() << e.what();
     }
-    
+
     logger::debug() << "completed IP addresses load";
 }
 

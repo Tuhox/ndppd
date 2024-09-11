@@ -174,7 +174,7 @@ void logger::syslog(bool sl)
     if (sl == _syslog)
         return;
 
-    if (_syslog = sl) {
+    if ((_syslog = sl)) {
         setlogmask(LOG_UPTO(LOG_DEBUG));
         openlog("ndppd", LOG_CONS | LOG_NDELAY | LOG_PERROR | LOG_PID, LOG_USER);
     } else {

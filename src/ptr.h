@@ -59,7 +59,7 @@ protected:
             throw new invalid_pointer;
         }
 
-        if (_ref = ref) {
+        if ((_ref = ref)) {
             if (_weak) {
                 _ref->wc++;
             } else {
@@ -188,6 +188,12 @@ public:
         return other._ref != _ref;
     }
 
+    ptr<T>& operator!=(const ptr<T>& other)
+    {
+      _ref = other._ref;
+        return *this;
+    }
+
     bool is_null() const
     {
         return !_ref || !_ref->ptr;
@@ -262,8 +268,13 @@ public:
         ptr<T>(p, true)
     {
     }
+
+    weak_ptr<T>& operator=(const weak_ptr<T>& ptr)
+    {
+        *this = ptr;
+        return *this;
+    }
+
 };
 
 NDPPD_NS_END
-
-

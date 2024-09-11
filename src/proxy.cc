@@ -26,13 +26,13 @@
 #include "session.h"
 
 NDPPD_NS_BEGIN
-        
+
 static address all_nodes = address("ff02::1");
-        
+
 std::list<ptr<proxy> > proxy::_list;
 
 proxy::proxy() :
-    _router(true), _ttl(30000), _deadtime(3000), _timeout(500), _autowire(false), _keepalive(true), _promiscuous(false), _retries(3)
+    _promiscuous(false), _router(true), _autowire(false), _retries(3), _keepalive(true), _ttl(30000), _deadtime(3000), _timeout(500)
 {
 }
 
@@ -42,25 +42,25 @@ ptr<proxy> proxy::find_aunt(const std::string& ifname, const address& taddr)
             sit != _list.end(); sit++)
     {
         ptr<proxy> pr = (*sit);
-        
+
         bool has_addr = false;
         for (std::list<ptr<rule> >::iterator it = pr->_rules.begin(); it != pr->_rules.end(); it++) {
             ptr<rule> ru = *it;
-            
+
             if (ru->addr() == taddr) {
                 has_addr = true;
                 break;
             }
         }
-        
+
         if (has_addr == false) {
             continue;
         }
-        
+
         if (pr->ifa() && pr->ifa()->name() == ifname)
             return pr;
     }
-    
+
     return ptr<proxy>();
 }
 
@@ -98,16 +98,16 @@ ptr<session> proxy::find_or_create_session(const address& taddr)
 
     for (std::list<ptr<session> >::iterator sit = _sessions.begin();
             sit != _sessions.end(); sit++) {
-        
+
         if ((*sit)->taddr() == taddr)
             return (*sit);
     }
-    
+
     ptr<session> se;
-    
+
     // Since we couldn't find a session that matched, we'll try to find
     // a matching rule instead, and then set up a new session.
-    
+
     for (std::list<ptr<rule> >::iterator it = _rules.begin();
             it != _rules.end(); it++) {
         ptr<rule> ru = *it;
@@ -118,7 +118,7 @@ ptr<session> proxy::find_or_create_session(const address& taddr)
             if (!se) {
                 se = session::create(_ptr, taddr, _autowire, _keepalive, _retries);
             }
-            
+
             if (ru->is_auto()) {
                 ptr<route> rt = route::find(taddr);
 
@@ -136,12 +136,12 @@ ptr<session> proxy::find_or_create_session(const address& taddr)
                 // it "static" and immediately send the response.
                 se->handle_advert();
                 return se;
-                
+
             } else {
-                
+
                 ptr<iface> ifa = ru->daughter();
                 se->add_iface(ifa);
-     
+
                 #ifdef WITH_ND_NETLINK
                 if (if_addr_find(ifa->name(), &taddr.const_addr())) {
                     logger::debug() << "Sending NA out " << ifa->name();
@@ -152,11 +152,11 @@ ptr<session> proxy::find_or_create_session(const address& taddr)
             }
         }
     }
-    
+
     if (se) {
         _sessions.push_back(se);
     }
-    
+
     return se;
 }
 
@@ -178,10 +178,10 @@ void proxy::handle_stateless_advert(const address& saddr, const address& taddr, 
 {
     logger::debug()
         << "proxy::handle_stateless_advert() proxy=" << (ifa() ? ifa()->name() : "null") << ", taddr=" << taddr.to_string() << ", ifname=" << ifname;
-    
+
     ptr<session> se = find_or_create_session(taddr);
     if (!se) return;
-    
+
     if (_autowire == true && se->status() == session::WAITING) {
         se->handle_auto_wire(saddr, ifname, use_via);
     }
@@ -189,17 +189,18 @@ void proxy::handle_stateless_advert(const address& saddr, const address& taddr, 
 
 void proxy::handle_solicit(const address& saddr, const address& taddr, const std::string& ifname)
 {
+    (void)ifname;
     logger::debug()
         << "proxy::handle_solicit()";
-    
+
     // Otherwise find or create a session to scan for this address
     ptr<session> se = find_or_create_session(taddr);
     if (!se) return;
-    
+
     // Touching the session will cause an NDP advert to be transmitted to all
     // the daughters
     se->touch();
-    
+
     // If our session is confirmed then we can respoond with an advert otherwise
     // subscribe so that if it does become active we can notify everyone
     if (saddr != taddr) {
@@ -328,4 +329,3 @@ void proxy::timeout(int val)
 }
 
 NDPPD_NS_END
-

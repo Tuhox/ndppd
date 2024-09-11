@@ -43,40 +43,40 @@ void session::update_all(int elapsed_time)
         }
 
         switch (se->_status) {
-            
+
         case session::WAITING:
             if (se->_fails < se->_retries) {
                 logger::debug() << "session will keep trying [taddr=" << se->_taddr << "]";
-                
+
                 se->_ttl     = se->_pr->timeout();
                 se->_fails++;
-                
+
                 // Send another solicit
                 se->send_solicit();
             } else {
-                
+
                 logger::debug() << "session is now invalid [taddr=" << se->_taddr << "]";
-                
+
                 se->_status = session::INVALID;
                 se->_ttl    = se->_pr->deadtime();
             }
             break;
-            
+
         case session::RENEWING:
             logger::debug() << "session is became invalid [taddr=" << se->_taddr << "]";
-            
+
             if (se->_fails < se->_retries) {
                 se->_ttl     = se->_pr->timeout();
                 se->_fails++;
-                
+
                 // Send another solicit
                 se->send_solicit();
-            } else {            
+            } else {
                 se->_pr->remove_session(se);
             }
             break;
-            
-        case session::VALID:            
+
+        case session::VALID:
             if (se->touched() == true ||
                 se->keepalive() == true)
             {
@@ -90,7 +90,7 @@ void session::update_all(int elapsed_time)
                 se->send_solicit();
             } else {
                 se->_pr->remove_session(se);
-            }            
+            }
             break;
 
         default:
@@ -102,7 +102,7 @@ void session::update_all(int elapsed_time)
 session::~session()
 {
     logger::debug() << "session::~session() this=" << logger::format("%x", this);
-    
+
     if (_wired == true) {
         for (std::list<ptr<iface> >::iterator it = _ifaces.begin();
             it != _ifaces.end(); it++) {
@@ -168,12 +168,12 @@ void session::touch()
     if (_touched == false)
     {
         _touched = true;
-        
+
         if (status() == session::WAITING || status() == session::INVALID) {
             _ttl = _pr->timeout();
-            
+
             logger::debug() << "session is now probing [taddr=" << _taddr << "]";
-            
+
             send_solicit();
         }
     }
@@ -188,10 +188,10 @@ void session::handle_auto_wire(const address& saddr, const std::string& ifname, 
 {
     if (_wired == true && (_wired_via.is_empty() || _wired_via == saddr))
         return;
-    
+
     logger::debug()
         << "session::handle_auto_wire() taddr=" << _taddr << ", ifname=" << ifname;
-    
+
     if (use_via == true &&
         _taddr != saddr &&
         saddr.is_unicast() == true &&
@@ -206,16 +206,18 @@ void session::handle_auto_wire(const address& saddr, const std::string& ifname, 
         route_cmd << " " << "dev";
         route_cmd << " " << ifname;
 
+        const std::string str(route_cmd.str());
         logger::debug()
-            << "session::system(" << route_cmd.str() << ")";
-        
-        system(route_cmd.str().c_str());
-        
+            << "session::system(" << str << ")";
+
+        const int ignored = system(str.c_str());
+        (void)ignored;
+
         _wired_via = saddr;
     }
     else
         _wired_via.reset();
-    
+
     {
         std::stringstream route_cmd;
         route_cmd << "ip";
@@ -230,12 +232,14 @@ void session::handle_auto_wire(const address& saddr, const std::string& ifname, 
         route_cmd << " " << "dev";
         route_cmd << " " << ifname;
 
+        const std::string str(route_cmd.str());
         logger::debug()
-            << "session::system(" << route_cmd.str() << ")";
+            << "session::system(" << str << ")";
 
-        system(route_cmd.str().c_str());
+        const int ignored = system(str.c_str());
+        (void)ignored;
     }
-    
+
     _wired = true;
 }
 
@@ -243,7 +247,7 @@ void session::handle_auto_unwire(const std::string& ifname)
 {
     logger::debug()
         << "session::handle_auto_unwire() taddr=" << _taddr << ", ifname=" << ifname;
-    
+
     {
         std::stringstream route_cmd;
         route_cmd << "ip";
@@ -258,12 +262,14 @@ void session::handle_auto_unwire(const std::string& ifname)
         route_cmd << " " << "dev";
         route_cmd << " " << ifname;
 
+        const std::string str(route_cmd.str());
         logger::debug()
-            << "session::system(" << route_cmd.str() << ")";
+            << "session::system(" << str << ")";
 
-        system(route_cmd.str().c_str());
+        const int ignored = system(str.c_str());
+        (void)ignored;
     }
-    
+
     if (_wired_via.is_empty() == false) {
         std::stringstream route_cmd;
         route_cmd << "ip";
@@ -274,12 +280,14 @@ void session::handle_auto_unwire(const std::string& ifname)
         route_cmd << " " << "dev";
         route_cmd << " " << ifname;
 
+        const std::string str(route_cmd.str());
         logger::debug()
-            << "session::system(" << route_cmd.str() << ")";
+            << "session::system(" << str << ")";
 
-        system(route_cmd.str().c_str());
+        const int ignored = system(str.c_str());
+        (void)ignored;
     }
-    
+
     _wired = false;
     _wired_via.reset();
 }
@@ -289,7 +297,7 @@ void session::handle_advert(const address& saddr, const std::string& ifname, boo
     if (_autowire == true && _status == WAITING) {
         handle_auto_wire(saddr, ifname, use_via);
     }
-    
+
     handle_advert();
 }
 
@@ -298,16 +306,16 @@ void session::handle_advert()
 {
     logger::debug()
         << "session::handle_advert() taddr=" << _taddr << ", ttl=" << _pr->ttl();
-    
+
     if (_status != VALID) {
         _status = VALID;
-        
+
         logger::debug() << "session is active [taddr=" << _taddr << "]";
     }
-    
+
     _ttl    = _pr->ttl();
     _fails  = 0;
-    
+
     if (!_pending.empty()) {
         for (std::list<ptr<address> >::iterator ad = _pending.begin();
                 ad != _pending.end(); ad++) {

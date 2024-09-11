@@ -55,6 +55,8 @@ ptr<rule> rule::create(const ptr<proxy>& pr, const address& addr, const ptr<ifac
     ifindex = if_nametoindex(ifa->name().c_str());
 #ifdef WITH_ND_NETLINK
     if_add_to_list(ifindex, ifa);
+#else
+    (void)ifindex;
 #endif
 
     logger::debug() << "rule::create() if=" << pr->ifa()->name() << ", slave=" << ifa->name() << ", addr=" << addr;
@@ -70,7 +72,7 @@ ptr<rule> rule::create(const ptr<proxy>& pr, const address& addr, bool aut)
     ru->_addr  = addr;
     ru->_aut   = aut;
     _any_aut   = _any_aut || aut;
-    
+
     if (aut == false)
         _any_static = true;
 
