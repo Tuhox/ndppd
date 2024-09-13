@@ -32,7 +32,7 @@ static address all_nodes = address("ff02::1");
 std::list<ptr<proxy> > proxy::_list;
 
 proxy::proxy() :
-    _router(true), _ttl(30000), _deadtime(3000), _timeout(500), _autowire(false), _keepalive(true), _promiscuous(false), _retries(3)
+    _promiscuous(false), _router(true), _autowire(false), _retries(3), _keepalive(true), _ttl(30000), _deadtime(3000), _timeout(500)
 {
 }
 
