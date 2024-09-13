@@ -703,7 +703,7 @@ int iface::poll_all()
         } else {
             size = ifa->read_advert(saddr, taddr);
             if (size < 0) {
-              logger::error() << "Failed to read from interface '" << ifa->_name.c_str() << "'";
+                logger::error() << "Failed to read from interface '" << ifa->_name.c_str() << "'";
                 continue;
             }
             if (size == 0) {
