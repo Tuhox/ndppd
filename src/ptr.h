@@ -271,7 +271,7 @@ public:
 
     weak_ptr<T>& operator=(const weak_ptr<T>& ptr)
     {
-        *this = ptr;
+        ndppd::ptr<T>::operator=(ptr);
         return *this;
     }
 

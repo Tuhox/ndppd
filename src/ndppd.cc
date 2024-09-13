@@ -97,7 +97,7 @@ static ptr<conf> load_config(const std::string& path)
 
             address addr(*ru_cf);
 
-            if (x_cf = ru_cf->find("iface")) {
+            if ((x_cf = ru_cf->find("iface"))) {
                 if (ru_cf->find("static") || ru_cf->find("auto")) {
                     logger::error()
                         << "Only one of 'iface', 'auto' and 'static' may "
@@ -221,7 +221,7 @@ static bool configure(ptr<conf>& cf)
             else
                 autovia = *x_cf;
 
-            if (x_cf = ru_cf->find("iface"))
+            if ((x_cf = ru_cf->find("iface")))
             {
                 ptr<iface> ifa = iface::open_ifd(*x_cf);
                 if (!ifa || ifa.is_null() == true) {

@@ -156,7 +156,7 @@ ptr<iface> route::find_and_open(const address& addr)
 {
     ptr<route> rt;
 
-    if (rt = find(addr)) {
+    if ((rt = find(addr))) {
         return rt->ifa();
     }
 

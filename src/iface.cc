@@ -664,7 +664,7 @@ int iface::poll_all()
         if (is_pfd) {
             size = ifa->read_solicit(saddr, daddr, taddr);
             if (size < 0) {
-                logger::error() << "Failed to read from interface '%s'", ifa->_name.c_str();
+                logger::error() << "Failed to read from interface '" << ifa->_name.c_str() << "'";
                 continue;
             }
             if (size == 0) {
@@ -703,7 +703,7 @@ int iface::poll_all()
         } else {
             size = ifa->read_advert(saddr, taddr);
             if (size < 0) {
-                logger::error() << "Failed to read from interface '%s'", ifa->_name.c_str();
+              logger::error() << "Failed to read from interface '" << ifa->_name.c_str() << "'";
                 continue;
             }
             if (size == 0) {
