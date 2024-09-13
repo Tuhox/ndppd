@@ -206,11 +206,11 @@ void session::handle_auto_wire(const address& saddr, const std::string& ifname, 
         route_cmd << " " << "dev";
         route_cmd << " " << ifname;
 
+        const std::string str(route_cmd.str());
         logger::debug()
-            << "session::system(" << route_cmd.str() << ")";
-        
-        system(route_cmd.str().c_str());
-        
+            << "session::system(" << str << ")";
+
+        system(str.c_str());
         _wired_via = saddr;
     }
     else
@@ -230,10 +230,11 @@ void session::handle_auto_wire(const address& saddr, const std::string& ifname, 
         route_cmd << " " << "dev";
         route_cmd << " " << ifname;
 
+        const std::string str(route_cmd.str());
         logger::debug()
-            << "session::system(" << route_cmd.str() << ")";
+            << "session::system(" << str << ")";
 
-        system(route_cmd.str().c_str());
+        system(str.c_str());
     }
     
     _wired = true;
@@ -258,10 +259,11 @@ void session::handle_auto_unwire(const std::string& ifname)
         route_cmd << " " << "dev";
         route_cmd << " " << ifname;
 
+        const std::string str(route_cmd.str());
         logger::debug()
-            << "session::system(" << route_cmd.str() << ")";
+            << "session::system(" << str << ")";
 
-        system(route_cmd.str().c_str());
+        system(str.c_str());
     }
     
     if (_wired_via.is_empty() == false) {
@@ -274,10 +276,11 @@ void session::handle_auto_unwire(const std::string& ifname)
         route_cmd << " " << "dev";
         route_cmd << " " << ifname;
 
+        const std::string str(route_cmd.str());
         logger::debug()
-            << "session::system(" << route_cmd.str() << ")";
+            << "session::system(" << str << ")";
 
-        system(route_cmd.str().c_str());
+        system(str.c_str());
     }
     
     _wired = false;
