@@ -132,6 +132,18 @@ bool address::operator!=(const address& addr) const
               ((_addr.s6_addr32[3] ^ addr._addr.s6_addr32[3]) & _mask.s6_addr32[3]));
 }
 
+address& address::operator=(const address& addr)
+{
+    _ttl       = addr._ttl;
+    _c_ttl     = addr._c_ttl;
+    _addresses = addr._addresses;
+    _addr      = addr._addr;
+    _mask      = addr._mask;
+
+    return *this;
+}
+
+
 bool address::is_empty() const
 {
     if (_addr.s6_addr32[0] == 0 &&

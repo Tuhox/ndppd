@@ -55,6 +55,8 @@ public:
 
     bool operator!=(const address& addr) const;
 
+    address& operator=(const address& addr);
+
     void reset();
 
     bool is_empty() const;
