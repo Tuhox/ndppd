@@ -143,7 +143,7 @@ bool address::is_empty() const
         _mask.s6_addr32[2] == 0xffffffff &&
         _mask.s6_addr32[3] == 0xffffffff)
         return true;
-        
+
     return false;
 }
 
@@ -339,7 +339,7 @@ bool address::is_unicast() const
     if (_addr.s6_addr32[2] == 0 &&
         _addr.s6_addr32[3] == 0)
         return false;
-    
+
     return _addr.s6_addr[0] != 0xff;
 }
 
@@ -390,20 +390,20 @@ void address::load(const std::string& path)
                 logger::warning() << "failed to load address (" << buf << ")";
                 continue;
             }
-            
+
             addr.prefix(128);
-            
+
             std::string iface = route::token(buf + 45);
 
             address::add(addr, iface);
-            
+
             logger::debug() << "found local addr=" << addr << ", iface=" << iface;
         }
     } catch (std::ifstream::failure e) {
         logger::warning() << "Failed to parse IPv6 address data from '" << path << "'";
         logger::error() << e.what();
     }
-    
+
     logger::debug() << "completed IP addresses load";
 }
 

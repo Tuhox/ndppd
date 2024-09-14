@@ -44,11 +44,11 @@ public:
     bool check(const address& addr) const;
 
     static bool any_auto();
-    
+
     static bool any_static();
-    
+
     static bool any_iface();
-    
+
     bool autovia() const;
 
     void autovia(bool val);
@@ -65,11 +65,11 @@ private:
     bool _aut;
 
     static bool _any_aut;
-    
+
     static bool _any_static;
-    
+
     static bool _any_iface;
-    
+
     bool _autovia;
 
     rule();

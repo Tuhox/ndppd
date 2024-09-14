@@ -70,7 +70,7 @@ ptr<rule> rule::create(const ptr<proxy>& pr, const address& addr, bool aut)
     ru->_addr  = addr;
     ru->_aut   = aut;
     _any_aut   = _any_aut || aut;
-    
+
     if (aut == false)
         _any_static = true;
 
