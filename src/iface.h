@@ -57,28 +57,28 @@ public:
 
     // Reads a NB_NEIGHBOR_ADVERT message from the _ifd socket;
     ssize_t read_advert(address& saddr, address& taddr);
-    
+
     bool handle_local(const address& saddr, const address& taddr);
-    
+
     bool is_local(const address& addr);
-    
+
     void handle_reverse_advert(const address& saddr, const std::string& ifname);
 
     // Returns the name of the interface.
     const std::string& name() const;
-    
+
     std::list<weak_ptr<proxy> >::iterator serves_begin();
-    
+
     std::list<weak_ptr<proxy> >::iterator serves_end();
-    
+
     void add_serves(const ptr<proxy>& proxy);
-    
+
     std::list<weak_ptr<proxy> >::iterator parents_begin();
-    
+
     std::list<weak_ptr<proxy> >::iterator parents_end();
-    
+
     void add_parent(const ptr<proxy>& parent);
-    
+
     static std::map<std::string, weak_ptr<iface> > _map;
 
 private:
@@ -106,15 +106,15 @@ private:
 
     // Previous state of ALLMULTI for the interface.
     int _prev_allmulti;
-    
+
     // Previous state of PROMISC for the interface
     int _prev_promiscuous;
 
     // Name of this interface.
     std::string _name;
-    
+
     std::list<weak_ptr<proxy> > _serves;
-    
+
     std::list<weak_ptr<proxy> > _parents;
 
     // The link-layer address of this interface.
@@ -123,7 +123,7 @@ private:
     // Turns on/off ALLMULTI for this interface - returns the previous state
     // or -1 if there was an error.
     int allmulti(int state);
-    
+
     // Turns on/off PROMISC for this interface - returns the previous state
     // or -1 if there was an error
     int promiscuous(int state);

@@ -73,7 +73,7 @@ iface::~iface()
     }
 
     _map_dirty = true;
-    
+
     _serves.clear();
     _parents.clear();
 }
@@ -176,7 +176,7 @@ ptr<iface> iface::open_pfd(const std::string& name, bool promiscuous)
 
     // Eh. Allmulti.
     ifa->_prev_allmulti = ifa->allmulti(1);
-    
+
     // Eh. Promiscuous
     if (promiscuous == true) {
         ifa->_prev_promiscuous = ifa->promiscuous(1);
@@ -305,9 +305,9 @@ ssize_t iface::read(int fd, struct sockaddr* saddr, ssize_t saddr_size, uint8_t*
 {
     struct msghdr mhdr;
     struct iovec iov;
-    int len;
+    ssize_t len;
 
-    if (!msg || (size < 0))
+    if (!msg)
         return -1;
 
     iov.iov_len = size;
@@ -318,16 +318,16 @@ ssize_t iface::read(int fd, struct sockaddr* saddr, ssize_t saddr_size, uint8_t*
     mhdr.msg_namelen = saddr_size;
     mhdr.msg_iov =& iov;
     mhdr.msg_iovlen = 1;
-    
+
     if ((len = recvmsg(fd,& mhdr, 0)) < 0)
     {
         logger::error() << "iface::read() failed! error=" << logger::err() << ", ifa=" << name();
         return -1;
     }
-    
+
     logger::debug() << "iface::read() ifa=" << name() << ", len=" << len;
 
-    if (len < sizeof(struct icmp6_hdr))
+    if (len < static_cast<ssize_t>(sizeof(struct icmp6_hdr)))
         return -1;
 
     return len;
@@ -387,7 +387,7 @@ ssize_t iface::read_solicit(address& saddr, address& daddr, address& taddr)
     taddr = ns->nd_ns_target;
     daddr = ip6h->ip6_dst;
     saddr = ip6h->ip6_src;
-    
+
     // Ignore packets sent from this machine
     if (iface::is_local(saddr) == true) {
         return 0;
@@ -474,7 +474,7 @@ ssize_t iface::read_advert(address& saddr, address& taddr)
     struct sockaddr_in6 t_saddr;
     uint8_t msg[256];
     ssize_t len;
-    
+
     memset(&t_saddr, 0, sizeof(struct sockaddr_in6));
     t_saddr.sin6_family = AF_INET6;
     t_saddr.sin6_port   = htons(IPPROTO_ICMPV6); // Needed?
@@ -485,7 +485,7 @@ ssize_t iface::read_advert(address& saddr, address& taddr)
     }
 
     saddr = t_saddr.sin6_addr;
-    
+
     // Ignore packets sent from this machine
     if (iface::is_local(saddr) == true) {
         return 0;
@@ -504,7 +504,7 @@ ssize_t iface::read_advert(address& saddr, address& taddr)
 bool iface::is_local(const address& addr)
 {
     // Check if the address is for an interface we own that is attached to
-    // one of the slave interfaces    
+    // one of the slave interfaces
     for (std::list<ptr<route> >::iterator ad = address::addresses_begin(); ad != address::addresses_end(); ad++)
     {
         if ((*ad)->addr() == addr)
@@ -516,7 +516,7 @@ bool iface::is_local(const address& addr)
 bool iface::handle_local(const address& saddr, const address& taddr)
 {
     // Check if the address is for an interface we own that is attached to
-    // one of the slave interfaces    
+    // one of the slave interfaces
     for (std::list<ptr<route> >::iterator ad = address::addresses_begin(); ad != address::addresses_end(); ad++)
     {
         if ((*ad)->addr() == taddr)
@@ -525,7 +525,7 @@ bool iface::handle_local(const address& saddr, const address& taddr)
             for (std::list<weak_ptr<proxy> >::iterator pit = serves_begin(); pit != serves_end(); pit++) {
                 ptr<proxy> pr = (*pit);
                 if (!pr) continue;
-                
+
                 for (std::list<ptr<rule> >::iterator it = pr->rules_begin(); it != pr->rules_end(); it++) {
                     ptr<rule> ru = *it;
 
@@ -539,7 +539,7 @@ bool iface::handle_local(const address& saddr, const address& taddr)
             }
         }
     }
-    
+
     return false;
 }
 
@@ -547,17 +547,17 @@ void iface::handle_reverse_advert(const address& saddr, const std::string& ifnam
 {
     if (!saddr.is_unicast())
         return;
-    
+
     logger::debug()
         << "proxy::handle_reverse_advert()";
-    
+
     // Loop through all the parents that forward new NDP soliciation requests to this interface
     for (std::list<weak_ptr<proxy> >::iterator pit = parents_begin(); pit != parents_end(); pit++) {
         ptr<proxy> parent = (*pit);
         if (!parent || !parent->ifa()) {
             continue;
         }
-    
+
         // Setup the reverse path on any proxies that are dealing
         // with the reverse direction (this helps improve connectivity and
         // latency in a full duplex setup)
@@ -664,19 +664,19 @@ int iface::poll_all()
         if (is_pfd) {
             size = ifa->read_solicit(saddr, daddr, taddr);
             if (size < 0) {
-                logger::error() << "Failed to read from interface '%s'", ifa->_name.c_str();
+                logger::error() << "Failed to read from interface '" << ifa->_name.c_str() << "'";
                 continue;
-            } 
+            }
             if (size == 0) {
                 logger::debug() << "iface::read_solicit() loopback received and ignored";
                 continue;
             }
-            
+
             // Process any local addresses for interfaces that we are proxying
             if (ifa->handle_local(saddr, taddr) == true) {
                 continue;
             }
-            
+
             // We have to handle all the parents who may be interested in
             // the reverse path towards the one who sent this solicit.
             // In fact, the parent need to know the source address in order
@@ -688,29 +688,29 @@ int iface::poll_all()
             for (std::list<weak_ptr<proxy> >::iterator pit = ifa->serves_begin(); pit != ifa->serves_end(); pit++) {
                 ptr<proxy> pr = (*pit);
                 if (!pr) continue;
-                
+
                 // Process the solicitation request by relating it to other
                 // interfaces or lookup up any statics routes we have configured
                 handled = true;
                 pr->handle_solicit(saddr, taddr, ifa->name());
             }
-            
+
             // If it was not handled then write an error message
             if (handled == false) {
                 logger::debug() << " - solicit was ignored";
             }
-            
+
         } else {
             size = ifa->read_advert(saddr, taddr);
             if (size < 0) {
-                logger::error() << "Failed to read from interface '%s'", ifa->_name.c_str();
+              logger::error() << "Failed to read from interface '" << ifa->_name.c_str() << "'";
                 continue;
             }
             if (size == 0) {
                 logger::debug() << "iface::read_advert() loopback received and ignored";
                 continue;
             }
-            
+
             // Process the NDP advert
             bool handled = false;
             for (std::list<weak_ptr<proxy> >::iterator pit = ifa->parents_begin(); pit != ifa->parents_end(); pit++) {
@@ -718,14 +718,14 @@ int iface::poll_all()
                 if (!pr || !pr->ifa()) {
                     continue;
                 }
-                
+
                 // The proxy must have a rule for this interface or it is not meant to receive
                 // any notifications and thus they must be ignored
                 bool autovia = false;
                 bool is_relevant = false;
                 for (std::list<ptr<rule> >::iterator it = pr->rules_begin(); it != pr->rules_end(); it++) {
                     ptr<rule> ru = *it;
-                    
+
                     if (ru->addr() == taddr &&
                         ru->daughter() &&
                         ru->daughter()->name() == ifa->name())
@@ -739,12 +739,12 @@ int iface::poll_all()
                     logger::debug() << "iface::read_advert() advert is not for " << ifa->name() << "...skipping";
                     continue;
                 }
-                
+
                 // Process the NDP advertisement
                 handled = true;
                 pr->handle_advert(saddr, taddr, ifa->name(), autovia);
             }
-            
+
             // If it was not handled then write an error message
             if (handled == false) {
                 logger::debug() << " - advert was ignored";

@@ -1,8 +1,12 @@
+SHELL = /bin/sh
+
 ifdef DEBUG
 CXXFLAGS ?= -g -DDEBUG
 else
 CXXFLAGS ?= -O3
 endif
+# pedantic much?
+CXXFLAGS += -Wall -Wextra -Werror
 
 PREFIX  ?= /usr/local
 CXX     ?= g++
@@ -13,7 +17,7 @@ PKG_CONFIG ?= pkg-config
 
 
 OBJS     = src/logger.o src/ndppd.o src/iface.o src/proxy.o src/address.o \
-           src/rule.o src/session.o src/conf.o src/route.o 
+           src/rule.o src/session.o src/conf.o src/route.o
 
 ifdef WITH_ND_NETLINK
   LIBS     = `${PKG_CONFIG} --libs glib-2.0 libnl-3.0 libnl-route-3.0` -pthread
@@ -21,8 +25,10 @@ ifdef WITH_ND_NETLINK
   OBJ      = ${OBJ} src/nd-netlink.o
 endif
 
+.PHONY: all
 all: ndppd ndppd.1.gz ndppd.conf.5.gz
 
+.PHONY: install
 install: all
 	mkdir -p ${SBINDIR} ${MANDIR} ${MANDIR}/man1 ${MANDIR}/man5
 	cp ndppd ${SBINDIR}
@@ -40,10 +46,11 @@ ndppd: ${OBJS}
 	${CXX} -o ndppd ${LDFLAGS} ${OBJS} ${LIBS}
 
 nd-proxy: nd-proxy.c
-	${CXX} -o nd-proxy -Wall -Werror ${LDFLAGS} `${PKG_CONFIG} --cflags glib-2.0` nd-proxy.c `${PKG_CONFIG} --libs glib-2.0`
+	${CXX} -o nd-proxy -Wall -Werror -Wextra -Werror ${LDFLAGS} `${PKG_CONFIG} --cflags glib-2.0` nd-proxy.c `${PKG_CONFIG} --libs glib-2.0`
 
 .cc.o:
 	${CXX} -c ${CPPFLAGS} $(CXXFLAGS) -o $@ $<
 
+.PHONY: clean
 clean:
 	rm -f ndppd ndppd.conf.5.gz ndppd.1.gz ${OBJS} nd-proxy

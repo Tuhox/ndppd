@@ -91,7 +91,7 @@ ptr<conf> conf::load(const std::string& path)
         }
 
         logger::error() << "Could not parse configuration file";
-    } catch (std::ifstream::failure e) {
+    } catch (std::ifstream::failure & e) {
         logger::error() << "Failed to load configuration file '" << path << "'";
     }
 

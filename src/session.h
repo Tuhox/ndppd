@@ -32,29 +32,29 @@ private:
     weak_ptr<proxy> _pr;
 
     address _saddr, _daddr, _taddr;
-    
+
     bool _autowire;
-    
+
     bool _keepalive;
-    
+
     bool _wired;
-    
+
     address _wired_via;
-    
+
     bool _touched;
 
     // An array of interfaces this session is monitoring for
     // ND_NEIGHBOR_ADVERT on.
     std::list<ptr<iface> > _ifaces;
-    
+
     std::list<ptr<address> > _pending;
 
     // The remaining time in miliseconds the object will stay in the
     // interface's session array or cache.
     int _ttl;
-    
+
     int _fails;
-    
+
     int _retries;
 
     int _status;
@@ -78,7 +78,7 @@ public:
     static ptr<session> create(const ptr<proxy>& pr, const address& taddr, bool autowire, bool keepalive, int retries);
 
     void add_iface(const ptr<iface>& ifa);
-    
+
     void add_pending(const address& addr);
 
     const address& taddr() const;
@@ -86,31 +86,31 @@ public:
     const address& daddr() const;
 
     const address& saddr() const;
-    
+
     bool autowire() const;
-    
+
     int retries() const;
-    
+
     int fails() const;
 
     bool keepalive() const;
-    
+
     bool wired() const;
-    
+
     bool touched() const;
 
     int status() const;
 
     void status(int val);
-    
+
     void handle_advert();
 
     void handle_advert(const address& saddr, const std::string& ifname, bool use_via);
-    
+
     void handle_auto_wire(const address& saddr, const std::string& ifname, bool use_via);
-    
+
     void handle_auto_unwire(const std::string& ifname);
-    
+
     void touch();
 
     void send_advert(const address& daddr);

@@ -188,6 +188,12 @@ public:
         return other._ref != _ref;
     }
 
+    ptr<T>& operator!=(const ptr<T>& other)
+    {
+      _ref = other._ref;
+        return *this;
+    }
+
     bool is_null() const
     {
         return !_ref || !_ref->ptr;
@@ -262,8 +268,13 @@ public:
         ptr<T>(p, true)
     {
     }
+
+    weak_ptr<T>& operator=(const weak_ptr<T>& ptr)
+    {
+        ndppd::ptr<T>::operator=(ptr);
+        return *this;
+    }
+
 };
 
 NDPPD_NS_END
-
-
