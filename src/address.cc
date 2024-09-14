@@ -399,7 +399,7 @@ void address::load(const std::string& path)
 
             logger::debug() << "found local addr=" << addr << ", iface=" << iface;
         }
-    } catch (std::ifstream::failure e) {
+    } catch (std::ifstream::failure & e) {
         logger::warning() << "Failed to parse IPv6 address data from '" << path << "'";
         logger::error() << e.what();
     }

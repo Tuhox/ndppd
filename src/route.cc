@@ -119,7 +119,7 @@ void route::load(const std::string& path)
 
             route::create(addr, route::token(buf + 141));
         }
-    } catch (std::ifstream::failure e) {
+    } catch (std::ifstream::failure & e) {
         logger::warning() << "Failed to parse IPv6 routing data from '" << path << "'";
         logger::error() << e.what();
     }
