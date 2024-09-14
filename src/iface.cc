@@ -305,9 +305,9 @@ ssize_t iface::read(int fd, struct sockaddr* saddr, ssize_t saddr_size, uint8_t*
 {
     struct msghdr mhdr;
     struct iovec iov;
-    int len;
+    ssize_t len;
 
-    if (!msg || (size < 0))
+    if (!msg)
         return -1;
 
     iov.iov_len = size;
@@ -327,7 +327,7 @@ ssize_t iface::read(int fd, struct sockaddr* saddr, ssize_t saddr_size, uint8_t*
 
     logger::debug() << "iface::read() ifa=" << name() << ", len=" << len;
 
-    if (len < sizeof(struct icmp6_hdr))
+    if (len < static_cast<ssize_t>(sizeof(struct icmp6_hdr)))
         return -1;
 
     return len;
@@ -703,7 +703,7 @@ int iface::poll_all()
         } else {
             size = ifa->read_advert(saddr, taddr);
             if (size < 0) {
-                logger::error() << "Failed to read from interface '" << ifa->_name.c_str() << "'";
+              logger::error() << "Failed to read from interface '" << ifa->_name.c_str() << "'";
                 continue;
             }
             if (size == 0) {
