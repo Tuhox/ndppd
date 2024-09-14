@@ -286,12 +286,14 @@ static bool running = true;
 
 static void exit_ndppd(int sig)
 {
+    (void)sig;
     logger::error() << "Shutting down...";
     running = 0;
 }
 
 int main(int argc, char* argv[], char* env[])
 {
+    (void)env;
     signal(SIGINT, exit_ndppd);
     signal(SIGTERM, exit_ndppd);
 

@@ -189,6 +189,7 @@ void proxy::handle_stateless_advert(const address& saddr, const address& taddr, 
 
 void proxy::handle_solicit(const address& saddr, const address& taddr, const std::string& ifname)
 {
+    (void)ifname;
     logger::debug()
         << "proxy::handle_solicit()";
 
